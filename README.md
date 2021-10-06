@@ -1,1 +1,1 @@
-# ITS_project_2021
+## Schedule for the ITS project about path planning algorithms 
