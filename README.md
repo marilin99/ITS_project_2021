@@ -6,5 +6,5 @@ W9: test path planning algorithms on the map
 W10-14: user interface (in more detail soon) 
 
 Useful links: 
-https://github.com/AtsushiSakai/PythonRobotics/tree/master/PathPlanning
-https://pythonrobotics.readthedocs.io/en/latest/modules/path_planning.html
+* https://github.com/AtsushiSakai/PythonRobotics/tree/master/PathPlanning
+* https://pythonrobotics.readthedocs.io/en/latest/modules/path_planning.html
