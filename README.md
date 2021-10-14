@@ -10,3 +10,4 @@ Useful links:
 * https://pythonrobotics.readthedocs.io/en/latest/modules/path_planning.html
 * https://github.com/Sollimann/Dstar-lite-pathplanner
 * https://towardsdatascience.com/loading-data-from-openstreetmap-with-python-and-the-overpass-api-513882a27fd0
+* https://github.com/mocnik-science/osm-python-tools
