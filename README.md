@@ -1,6 +1,6 @@
 ## Schedule for the ITS project about path planning algorithms 
 
-* W8: obtain OSM through Python, establish path planning algorithms which are going to be used 
+* W8: get OSM working through Python, establish path planning algorithms which are going to be used 
 * W9: test path planning algorithms on the map 
 
 W10-14: user interface (in more detail soon) 
