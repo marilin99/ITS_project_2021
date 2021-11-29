@@ -3,7 +3,9 @@
 * W8: get OSM working through Python, establish path planning algorithms which are going to be used 
 * W9: test path planning algorithms on the map 
 
-W10-14: user interface (in more detail soon) 
+W10-14: user interface (in more detail soon) - PyQT5
+
+For running the "app", the repo should be cloned, and main.py should be run, the data folder has OSM data about Tartu city.
 
 Useful links: 
 * https://github.com/AtsushiSakai/PythonRobotics/tree/master/PathPlanning
