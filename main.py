@@ -42,6 +42,28 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
     def first_frame(self):
 
+
+        try:
+            self.ax.cla()
+            for i in reversed(range(self.layout.count())):
+                item = self.layout.itemAt(i)
+
+                if isinstance(item, QtWidgets.QWidgetItem):
+                    #print "widget" + str(item)
+                    item.widget().close()
+                    # or
+                    # item.widget().setParent(None)
+                elif isinstance(item, QtWidgets.QSpacerItem):
+                    pass
+
+                else:
+                    self.layout.clearLayout(item.layout())
+
+            # remove the item from layout
+            self.layout.removeItem(item)
+        except:
+            pass
+
         msg = QtWidgets.QLabel("Please select the path planning algorithm")
 
         btn1 = QtWidgets.QRadioButton("networkx A*")
@@ -122,14 +144,18 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.ax.set_ylim(58.33, 58.42)
         btn_apply = QtWidgets.QPushButton("Apply")
         btn_apply.clicked.connect(self.apply) 
-        btn_clear = QtWidgets.QPushButton("Clear map")  # optional TODO: add a Back to the algo choice page, splash page 
+        btn_clear = QtWidgets.QPushButton("Clear map") 
         btn_clear.clicked.connect(self.count_to_zero) 
+        btn_new_algo = QtWidgets.QPushButton("Choose a different algorithm") #TODO: add a Back to the algo choice page, splash page 
+        btn_new_algo.clicked.connect(self.first_frame) 
 
         self.layout.addWidget(msg)
         self.layout.addWidget(toolbar)
         self.layout.addWidget(self.canvas)
         self.layout.addWidget(btn_apply)
         self.layout.addWidget(btn_clear)
+        self.layout.addWidget(btn_new_algo)
+
 
         #widget = QtWidgets.QWidget()
         self.setLayout(self.layout)
