@@ -1,7 +1,6 @@
 import sys
 from PyQt5 import QtGui, QtCore, QtWidgets
 import matplotlib
-from matplotlib.backends.backend_agg import FigureCanvasAgg 
 import matplotlib.pyplot as plt
 matplotlib.use('Qt5Agg') # using pyqt5 backend
 import numpy as np
@@ -9,20 +8,18 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import geopandas as gpd
-
 import networkx as nx
-#from data_to_gpd import df_nodes, df_ways
 import pandas as pd
-from PyQt5.QtCore import QPropertyAnimation
 from matplotlib.animation import FuncAnimation
-from matplotlib.animation import PillowWriter
 import matplotlib.cm as cm
+import time
 
 
 
 click_count = 0
 startXY, endXY, point_1, point_2, choice = None, None, None, None, None
 
+fun_dict = {"net_d": "networkx Dijkstra", "n_astar": "networkx A*", "poorman": "poor man's A*"}
 
 edges_gpd = gpd.read_file("data/Tartu_edges_gpd.shp")  
 del edges_gpd["FID"]
@@ -53,19 +50,24 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         btn2 = QtWidgets.QRadioButton("poor man's A*")
         btn2.clicked.connect(self.poor_select)
 
+        btn4 = QtWidgets.QRadioButton("networkx Dijkstra")
+        btn4.clicked.connect(self.net_d)
+
         # frame 2 - clearing the frame, ready to render map and add text 
         btn3 = QtWidgets.QPushButton("Next")
-        btn3.clicked.connect(self.second_frame) # TODO: Next does not disappear when showing the map but after showing the path
+        btn3.clicked.connect(self.second_frame) 
+
+
 
         self.layout.addWidget(msg)
         self.layout.addWidget(btn1)
         self.layout.addWidget(btn2)
+        self.layout.addWidget(btn4)
         self.layout.addWidget(btn3)
 
         self.setLayout(self.layout)
 
     def net_select(self):
-
         global choice
         choice = "n_astar"
 
@@ -73,7 +75,10 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         global choice
         choice = "poorman"
 
-
+    def net_d(self):
+        global choice 
+        choice =  "net_d"
+ 
 
     def second_frame(self):
         
@@ -107,7 +112,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.fig = Figure(figsize=(10,10))
         self.ax = self.fig.add_subplot(111)
         self.canvas = FigureCanvas(self.fig)
-        msg = QtWidgets.QLabel("Click on two places in the map and then click on Apply")
+        msg = QtWidgets.QLabel(f"You chose: {fun_dict[choice]}. Click on two places in the map and then click on Apply")
         toolbar = NavigationToolbar(self.canvas, self) #MESSES WITH THE CLICKING 
         edges_gpd.plot(ax = self.ax, figsize=(10, 10), linewidth=0.5)
         #minx, miny, maxx, maxy  = edges_gpd.total_bounds
@@ -117,7 +122,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.ax.set_ylim(58.33, 58.42)
         btn_apply = QtWidgets.QPushButton("Apply")
         btn_apply.clicked.connect(self.apply) 
-        btn_clear = QtWidgets.QPushButton("Clear map")
+        btn_clear = QtWidgets.QPushButton("Clear map")  # optional TODO: add a Back to the algo choice page, splash page 
         btn_clear.clicked.connect(self.count_to_zero) 
 
         self.layout.addWidget(msg)
@@ -131,7 +136,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #self.setCentralWidget(widget)
         id = self.canvas.mpl_connect('button_press_event', self.onclick)
 
-        self.cursor = matplotlib.widgets.Cursor(self.ax)
+        self.cursor = matplotlib.widgets.Cursor(self.ax, color='purple')
         self.canvas.setCursor(QtGui.QCursor(    QtCore.Qt.ArrowCursor))
 
 
@@ -183,7 +188,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         click_count = 0
 
         if choice == "n_astar":
-
+            
+            current_time = time.time()
 
             shortest_path = nx.astar_path(G, start_node_ID, end_node_ID, weight="distance")
   
@@ -223,10 +229,12 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             self.layout.removeItem(item)    
 
             self.canvas = FigureCanvas(self.fig)
-            msg = QtWidgets.QLabel("A* based on the chosen points")
+            msg = QtWidgets.QLabel(f"Networkx A* based on the chosen points")
             edges_gpd.plot(ax=self.ax, linewidth=0.5)
             edges_gpd.loc[shortest_path_IDs].plot(ax = self.ax, linewidth=5, cmap = "viridis")
-
+            end_time = time.time() 
+            processing = end_time - current_time
+            msg1 = QtWidgets.QLabel(f"It took about {round(processing,2)} seconds to render this map.")
             btn_back = QtWidgets.QPushButton("Back to the map")
             btn_back.clicked.connect(self.second_frame) 
 
@@ -235,6 +243,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
             self.layout.addWidget(msg)
             self.layout.addWidget(self.canvas)
+            self.layout.addWidget(msg1)
             self.layout.addWidget(btn_back)
             
             self.setLayout(self.layout)
@@ -242,6 +251,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
         elif choice == "poorman":
 
+            current_time = time.time()
             # Self-implemented
             shortest_path, edge_history = poor_mans_a_star(start_node_ID, end_node_ID, astar_heuristic)
 
@@ -315,9 +325,75 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             # Animation initialiser
             self.anim = FuncAnimation(self.fig, animate, interval=0.005, repeat=False, blit=False, frames=len(edge_history))
 
+            end_time = time.time()
+            processing = end_time - current_time
+            msg1 = QtWidgets.QLabel(f"It took about {round(processing,2)} seconds to render this map.")
 
             self.layout.addWidget(msg)
             self.layout.addWidget(self.canvas)
+            self.layout.addWidget(msg1)
+            self.layout.addWidget(btn_back)
+            
+            self.setLayout(self.layout)
+
+        elif choice == "net_d":
+
+            current_time = time.time()
+            shortest_path = nx.bidirectional_dijkstra(G, start_node_ID, end_node_ID, weight="distance")
+  
+            shortest_path_IDs = []
+            for i in range(len(shortest_path[1]) - 1):
+                shortest_path_IDs.append(G.get_edge_data(shortest_path[1][i], shortest_path[1][i+1]).get("edgeID"))
+
+
+            # Get locations to zoom into for the general area where a path was found
+            margin_percent = 0.05
+
+            min_lat = min([G.nodes()[node].get("coords")[0] for node in shortest_path[1]])
+            max_lat = max([G.nodes()[node].get("coords")[0] for node in shortest_path[1]])
+            lat_margin = (max_lat - min_lat) * margin_percent
+
+            min_lon = min([G.nodes()[node].get("coords")[1] for node in shortest_path[1]])
+            max_lon = max([G.nodes()[node].get("coords")[1] for node in shortest_path[1]])
+            lon_margin = (max_lon - min_lon) * margin_percent
+
+            self.ax.cla() ## clear the map
+            for i in reversed(range(self.layout.count())):
+                item = self.layout.itemAt(i)
+
+                if isinstance(item, QtWidgets.QWidgetItem):
+                    #print "widget" + str(item)
+                    item.widget().close()
+                    # or
+                    # item.widget().setParent(None)
+                elif isinstance(item, QtWidgets.QSpacerItem):
+                    pass
+                    #print "spacer " + str(item)
+                    # no need to do extra stuff
+                else:
+                    self.layout.clearLayout(item.layout())
+
+            # remove the item from layout
+            self.layout.removeItem(item)    
+
+            self.canvas = FigureCanvas(self.fig)
+            msg = QtWidgets.QLabel("Networkx Dijkstra based on the chosen points")
+            edges_gpd.plot(ax=self.ax, linewidth=0.5)
+            edges_gpd.loc[shortest_path_IDs].plot(ax = self.ax, linewidth=5, cmap = "viridis")
+
+            end_time = time.time()
+            processing = end_time - current_time
+            msg1 = QtWidgets.QLabel(f"It took about {round(processing,2)} seconds to render this map.")
+
+            btn_back = QtWidgets.QPushButton("Back to the map")
+            btn_back.clicked.connect(self.second_frame) 
+
+            self.ax.set_xlim(min_lat - lat_margin, max_lat + lat_margin)# for TARTU only
+            self.ax.set_ylim(min_lon - lon_margin, max_lon + lon_margin)   
+
+            self.layout.addWidget(msg)
+            self.layout.addWidget(self.canvas)
+            self.layout.addWidget(msg1)
             self.layout.addWidget(btn_back)
             
             self.setLayout(self.layout)
