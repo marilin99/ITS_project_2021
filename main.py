@@ -332,24 +332,30 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             btn_back.clicked.connect(self.second_frame) 
 
             self.ax.set_xlim(min_lat - lat_margin, max_lat + lat_margin)
-            self.ax.set_ylim(min_lon - lon_margin, max_lon + lon_margin)   
-
-            # Draw visualisation of how shortest path was found and then also plot shortest path itself
-            def animate(i):
-                # This raw plt.plot() vs gpd.plot() is a bit faster.
-                art = []
+            self.ax.set_ylim(min_lon - lon_margin, max_lon + lon_margin) 
+            
+            lines = []
+            for i in range(len(edge_history)):
                 color = colors[i] if i < len(colors) else "red"
                 for x in edges_gpd.iloc[edge_history[i]].values:
                     x1 = x[0].coords[0][0]
                     x2 = x[0].coords[1][0]
                     y1 = x[0].coords[0][1]
                     y2 = x[0].coords[1][1]
+                    lines.append([x1, x2, y1, y2, color])
+            
+            art = []
+            # Draw visualisation of how shortest path was found and then also plot shortest path itself
+            def animate(i):
+                # This raw plt.plot() vs gpd.plot() is a bit faster.
+                art.append(self.ax.plot((lines[i][0], lines[i][1]), (lines[i][2], lines[i][3]), color = lines[i][4], linewidth = 10))
                     
-                    art = self.ax.plot((x1, x2), (y1, y2), color = color, linewidth = 4)
-                return art
+                if i == len(lines) - 1:
+                    return [item for sublist in art for item in sublist] 
+                return [item for sublist in art[-50:] for item in sublist] 
 
             # Animation initialiser
-            self.anim = FuncAnimation(self.fig, animate, interval=0.005, repeat=False, blit=False, frames=len(edge_history))
+            self.anim = FuncAnimation(self.fig, animate, interval=0.005, repeat=False, blit=True, frames=len(lines))
 
             end_time = time.time()
             processing = end_time - current_time
@@ -478,12 +484,13 @@ def poor_mans_a_star(start, end, h):
             tentative_g_score = g_score_dict[current] + \
                                 G.get_edge_data(current, neighbor).get("distance")
             if tentative_g_score < g_score_dict[neighbor]:
-                edges_this_step.append(G.get_edge_data(current, neighbor).get("edgeID"))
+                #edges_this_step.append(G.get_edge_data(current, neighbor).get("edgeID"))
                 came_from_dict[neighbor] = current
                 g_score_dict[neighbor] = tentative_g_score
                 f_score_dict[neighbor] = g_score_dict[neighbor] + h(neighbor, end)
 
                 if neighbor not in open_set:
+                    edges_this_step.append(G.get_edge_data(current, neighbor).get("edgeID"))
                     open_set.add(neighbor)
         edges_per_step.append(edges_this_step)
                     
