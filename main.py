@@ -15,12 +15,13 @@ import matplotlib.cm as cm
 import time
 
 
-
+# useful global variables
 click_count = 0
 startXY, endXY, point_1, point_2, choice = None, None, None, None, None
 
 fun_dict = {"net_d": "networkx Dijkstra", "n_astar": "networkx A*", "poorman": "poor man's A*"}
 
+# dataframe of Tartu city 
 edges_gpd = gpd.read_file("data/Tartu_edges_gpd.shp")  
 del edges_gpd["FID"]
 
@@ -30,7 +31,7 @@ df_ways = pd.read_csv("data/df_ways.csv")
 
 class ApplicationWindow(QtWidgets.QMainWindow):
     def __init__(self):
-     
+     	# application window settings (constant)
         QtWidgets.QMainWindow.__init__(self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.setWindowTitle("Path planner")
@@ -39,10 +40,10 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.main_widget)
         self.layout = QtWidgets.QVBoxLayout(self.main_widget)
 
-
+    # first page of the app 
     def first_frame(self):
 
-
+	# clearing the page from previous widgets
         try:
             self.ax.cla()
             for i in reversed(range(self.layout.count())):
@@ -79,8 +80,6 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         btn3 = QtWidgets.QPushButton("Next")
         btn3.clicked.connect(self.second_frame) 
 
-
-
         self.layout.addWidget(msg)
         self.layout.addWidget(btn1)
         self.layout.addWidget(btn2)
@@ -88,7 +87,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.layout.addWidget(btn3)
 
         self.setLayout(self.layout)
-
+	
+    # button events - setting global variable algorithms
     def net_select(self):
         global choice
         choice = "n_astar"
@@ -101,9 +101,9 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         global choice 
         choice =  "net_d"
  
-
+    # second page of showing the map 
     def second_frame(self):
-        
+        # clearing the frame of any excessive widgets
         try:
             self.ax.cla()
         except:
@@ -126,27 +126,21 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             # remove the item from layout
             self.layout.removeItem(item)
             pass    
-        #self.layout = QtWidgets.QVBoxLayout(self.main_widget)
 
- #       except:
- #           pass
-
+	# this is to show the map with a navigation toolbar and buttons
         self.fig = Figure(figsize=(10,10))
         self.ax = self.fig.add_subplot(111)
         self.canvas = FigureCanvas(self.fig)
         msg = QtWidgets.QLabel(f"You chose: {fun_dict[choice]}. Click on two places in the map and then click on Apply")
-        toolbar = NavigationToolbar(self.canvas, self) #MESSES WITH THE CLICKING 
+        toolbar = NavigationToolbar(self.canvas, self) 
         edges_gpd.plot(ax = self.ax, figsize=(10, 10), linewidth=0.5)
-        #minx, miny, maxx, maxy  = edges_gpd.total_bounds
-        #self.ax.set_xlim(minx+0.05, maxx-0.05)
-        #self.ax.set_ylim(miny+0.05, maxy-0.05)
         self.ax.set_xlim(26.62, 26.82) # for TARTU only
         self.ax.set_ylim(58.33, 58.42)
         btn_apply = QtWidgets.QPushButton("Apply")
         btn_apply.clicked.connect(self.apply) 
         btn_clear = QtWidgets.QPushButton("Clear map") 
         btn_clear.clicked.connect(self.count_to_zero) 
-        btn_new_algo = QtWidgets.QPushButton("Choose a different algorithm") #TODO: add a Back to the algo choice page, splash page 
+        btn_new_algo = QtWidgets.QPushButton("Choose a different algorithm") 
         btn_new_algo.clicked.connect(self.first_frame) 
 
         self.layout.addWidget(msg)
@@ -157,29 +151,27 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.layout.addWidget(btn_new_algo)
 
 
-        #widget = QtWidgets.QWidget()
+        
         self.setLayout(self.layout)
-        #self.setCentralWidget(widget)
         id = self.canvas.mpl_connect('button_press_event', self.onclick)
 
         self.cursor = matplotlib.widgets.Cursor(self.ax, color='purple')
         self.canvas.setCursor(QtGui.QCursor(    QtCore.Qt.ArrowCursor))
 
-
+    # saving clicks to global variables and coordinates (in lon/lat)
     def onclick(self, event):
 
         global click_count, startXY, endXY, point_1, point_2
 
         if click_count == 0:
-            #point_1 = None
             startXY = (event.xdata, event.ydata)
             point_1 = self.ax.scatter(event.xdata, event.ydata, color="red")
         if click_count == 1:
-            #point_2 = None
             endXY = (event.xdata, event.ydata)
             point_2 = self.ax.scatter(event.xdata, event.ydata, color="green")        
         click_count += 1
     
+    # for deleting points and setting the variables back to None
     def count_to_zero(self):
         global startXY, endXY, point_1, point_2, click_count
         startXY, endXY = (None,None), (None,None)
@@ -188,6 +180,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         point_2.remove()
         point_1, point_2 = None, None
 
+    # preparing to show the map 
     def apply(self):
         global choice, click_count 
 
@@ -264,7 +257,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             btn_back = QtWidgets.QPushButton("Back to the map")
             btn_back.clicked.connect(self.second_frame) 
 
-            self.ax.set_xlim(min_lat - lat_margin, max_lat + lat_margin)# for TARTU only
+            self.ax.set_xlim(min_lat - lat_margin, max_lat + lat_margin) # for TARTU only
             self.ax.set_ylim(min_lon - lon_margin, max_lon + lon_margin)   
 
             self.layout.addWidget(msg)
@@ -394,14 +387,9 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 item = self.layout.itemAt(i)
 
                 if isinstance(item, QtWidgets.QWidgetItem):
-                    #print "widget" + str(item)
                     item.widget().close()
-                    # or
-                    # item.widget().setParent(None)
                 elif isinstance(item, QtWidgets.QSpacerItem):
                     pass
-                    #print "spacer " + str(item)
-                    # no need to do extra stuff
                 else:
                     self.layout.clearLayout(item.layout())
 
@@ -429,14 +417,12 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             self.layout.addWidget(btn_back)
             
             self.setLayout(self.layout)
-
      
   
         return 
 
-
         
-
+##  A* path creation functions
 G = nx.from_pandas_edgelist(df_ways, "A_id", "B_id", ["distance", "edgeID"])
 # Add coordinates to each node so Astar algorithm can calculate heuristic
 node_attributes = df_nodes.set_index('id').T.to_dict('list')
@@ -497,7 +483,7 @@ def poor_mans_a_star(start, end, h):
     raise Exception('No path found.')
 
 
-
+# initialising the app when the program is run 
 def mains():
     qApp = QtWidgets.QApplication([])
     aw = ApplicationWindow()
